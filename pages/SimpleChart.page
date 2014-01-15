@@ -52,7 +52,7 @@
                     reportFilters : [ ]
                   }
                 }),
-        url: "/services/data/v30.0/analytics/reports/00Ox0000000OyyW",
+        url: "/services/data/v30.0/analytics/reports/00Ox0000000OyyW", /*** you need to swap this ID for your own report Id ***/
         dataType: "string",
         async: false
         }).responseText);
