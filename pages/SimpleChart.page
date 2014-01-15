@@ -1,0 +1,82 @@
+<apex:page standardController="Account" showheader="false">
+     <style>
+        .nvtooltip {display: none;}
+    </style>
+ <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css"> </link>
+ <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+ <script src="https://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+ <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.test_css)}" /> 
+ <script type="text/javascript" src="{!URLFOR($Resource.test)}"></script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.3.3/d3.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/nvd3/1.0.0-beta/nv.d3.min.js"></script>
+
+    <script type="text/javascript">
+    $(function() {
+        $('#popupDatepicker').datepick({ 
+        multiSelect: 4, multiSeparator: ',',
+        dateFormat: 'yyyy-mm-dd', 
+        minDate: '-3m', maxDate: '-1d',
+        onClose: function(dates) { 
+            var dates =  $('#popupDatepicker').val();
+            var date = dates.split(","); 
+            drawChart(date);
+        },
+        showTrigger: '#calImg'});
+    });
+    
+    </script>
+    
+
+  
+ <script>
+
+  /** Load the Google Charting library **/
+  $today = new Date();
+  $yesterday = new Date($today);
+  $yesterday.setDate($today.getDate() - 2);
+  $(document).ready(function() { drawChart([$.datepicker.formatDate('yy-mm-dd', $yesterday)]); });   
+
+  function drawChart(dates) {
+
+    /** Fetch the JSON data representing the the report **/
+    var response = JSON.parse($.ajax({
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader('Authorization', 'Bearer {!$Api.Session_ID}');
+        },
+        type: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        data : JSON.stringify( {
+                reportMetadata : {  
+                    historicalSnapshotDates : dates ,
+                    reportFilters : [ ]
+                  }
+                }),
+        url: "/services/data/v30.0/analytics/reports/00Ox0000000OyyW",
+        dataType: "string",
+        async: false
+        }).responseText);
+
+        var chart = nv.models.multiBarChart()
+                              .stacked(true)
+                              .staggerLabels(true);
+
+        var chartData = [];
+        $.each(response.groupingsDown.groupings, function(di, de) {
+            var values = [];
+            chartData.push({"key":de.label, "values": values});
+            $.each(response.groupingsAcross.groupings, function(ai, ae) {
+                values.push({"x": ae.label, "y": response.factMap[de.key+"!"+ae.key].aggregates[0].value});
+            });
+        });
+        d3.select('#chart').datum(chartData).transition().duration(500).call(chart);
+  }
+
+</script> 
+
+<div style="font-weight:bold; font-family:Arial,Helvetica,sans-serif;">
+
+<p>Select Dates: <input type="text" size="54" id="popupDatepicker" /></p> 
+</div>
+<svg id="chart" height="500px" width="500px"></svg>
+</apex:page>
